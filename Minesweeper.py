@@ -39,32 +39,37 @@ class Minesweeper:
         top_frame = tk.Frame(self.root)
         top_frame.pack(pady=10)
 
-        # Счётчик мин
-        self.mines_label = tk.Label(top_frame, text=f"Мины: {self.mines_count:03d}", font=("Arial", 14, "bold"), width=10)
+              # Счётчик мин
+        self.mines_label = tk.Label(top_frame, text=f"Мины: {self.mines_count:03d}", 
+                                   font=("Arial", 16, "bold"), width=10, relief="sunken", bd=2)
         self.mines_label.pack(side=tk.LEFT, padx=20)
 
         # Кнопка новой игры
-        self.new_game_btn = tk.Button(top_frame, text="😊", font=("Arial", 20), width=3, height=1, command=self.new_game)
+        self.new_game_btn = tk.Button(top_frame, text="😊", font=("Arial", 24), width=3, height=1, command=self.new_game)
         self.new_game_btn.pack(side=tk.LEFT)
 
         # Таймер
-        self.timer_label = tk.Label(top_frame, text="00:00", font=("Arial", 14, "bold"), width=10)
-        self.timer_label.pack(side=tk.LEFT, padx=20)
-
-        # Меню выбора сложности
-        menu_frame = tk.Frame(self.root)
-        menu_frame.pack(pady=5)
-
-        tk.Label(menu_frame, text="Сложность:").pack(side=tk.LEFT, padx=5)
-
-        for level in self.levels.keys():
-            btn = tk.Button(menu_frame, text=level, command=lambda l=level: self.change_level(l))
-            btn.pack(side=tk.LEFT, padx=3)
-
-        # Игровое поле
+        self.timer_label = tk.Label(top_frame, text="00:00", 
+                                   font=("Arial", 16, "bold"), width=10, relief="sunken", bd=2)
+        self.timer_label.pack(side=tk.RIGHT, padx=20)
+               # Игровое поле
         self.game_frame = tk.Frame(self.root, bg="gray")
         self.game_frame.pack(pady=10, padx=10)
+    def create_menu(self):
+        menubar = tk.Menu(self.root)
+        self.root.config(menu=menubar)
 
+        game_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Игра", menu=game_menu)
+        game_menu.add_command(label="Новая игра", command=self.new_game)
+        game_menu.add_command(label="Рекорды", command=self.show_records)
+        game_menu.add_separator()
+        game_menu.add_command(label="Выход", command=self.root.quit)
+
+        level_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Сложность", menu=level_menu)
+        for level in self.levels.keys():
+            level_menu.add_command(label=level, command=lambda l=level: self.change_level(l))
     def new_game(self):
         self.rows, self.cols, self.mines_count = self.levels[self.current_level]
         self.mines_left = self.mines_count
@@ -192,21 +197,19 @@ class Minesweeper:
             self.update_timer()
 
         if self.board[x][y] == -1:
-            # Проигрыш
             self.game_over = True
             self.reveal_all_mines()
             self.new_game_btn.config(text="😵")
-            messagebox.showinfo("Поражение", "Вы подорвались на мине!")
+            self.show_game_over_window("Поражение", "Вы подорвались на мине!", "😵")
             return
 
         self.flood_fill(x, y)
 
-        # Проверка победы
         if self.check_win():
             self.game_over = True
             self.timer_running = False
             self.new_game_btn.config(text="😎")
-            messagebox.showinfo("Победа!", f"Вы выиграли за {self.get_time()} секунд!")
+            self.show_game_over_window("Победа!", f"Вы выиграли за {self.get_time()} секунд!", "😎")
             self.save_record()
 
     def right_click(self, x, y):
@@ -263,10 +266,53 @@ class Minesweeper:
     def save_record(self):
         try:
             with open("records.txt", "a", encoding="utf-8") as f:
-                name = "Игрок"  # можно потом добавить ввод имени
-                f.write(f"{name}:{self.get_time()}:{self.current_level}\n")
+                f.write(f"{self.get_time()}:{self.current_level}\n")
         except:
             pass
+
+    def show_records(self):
+        try:
+            with open("records.txt", "r", encoding="utf-8") as f:
+                lines = f.readlines()
+        except FileNotFoundError:
+            lines = []
+
+        records = {}
+        for line in lines:
+            if line.strip():
+                parts = line.strip().split(":", 1)
+                if len(parts) == 2:
+                    t = int(parts[0])
+                    level = parts[1]
+                    if level not in records or t < records[level]:
+                        records[level] = t
+
+        text = "Лучшие результаты:\n\n"
+        for lvl in ["Новичок", "Любитель", "Эксперт"]:
+            text += f"{lvl}: {records.get(lvl, '—')} сек\n"
+
+        win = tk.Toplevel(self.root)
+        win.title("Рекорды")
+        tk.Label(win, text=text, font=("Arial", 12), justify=tk.LEFT).pack(pady=20, padx=20)
+        tk.Button(win, text="Закрыть", command=win.destroy).pack(pady=10)
+
+    def show_game_over_window(self, title, message, emoji):
+        win = tk.Toplevel(self.root)
+        win.title(title)
+        win.resizable(False, False)
+        win.grab_set()  # делает окно модальным
+
+        tk.Label(win, text=emoji, font=("Arial", 60)).pack(pady=10)
+        tk.Label(win, text=message, font=("Arial", 14)).pack(pady=5)
+        
+        if "Победа" in title:
+            tk.Label(win, text=f"Время: {self.get_time()} сек", font=("Arial", 12, "bold")).pack(pady=5)
+
+        btn_frame = tk.Frame(win)
+        btn_frame.pack(pady=10)
+        
+        tk.Button(btn_frame, text="Новая игра", command=lambda: [win.destroy(), self.new_game()]).pack(side=tk.LEFT, padx=10)
+        tk.Button(btn_frame, text="Закрыть", command=win.destroy).pack(side=tk.LEFT, padx=10)
 
     def run(self):
         self.root.mainloop()
