@@ -99,9 +99,22 @@ class Minesweeper:
         self.game_frame.pack(pady=10, padx=10)
 
     def return_to_menu(self):
-        # Очистка игры
-        if self.game_frame:
+        # Удаляем игровое поле
+        if hasattr(self, 'game_frame') and self.game_frame:
             self.game_frame.destroy()
+            self.game_frame = None
+
+        # Удаляем ВСЮ верхнюю панель и все остальные фреймы кроме меню
+        for widget in list(self.root.winfo_children()):
+            # Удаляем все фреймы кроме будущего главного меню
+            if isinstance(widget, tk.Frame):
+                widget.destroy()
+
+        # Сбрасываем ссылки
+        self.mines_label = None
+        self.timer_label = None
+        self.new_game_btn = None
+
         self.create_main_menu()
 
     def new_game(self):
@@ -410,7 +423,7 @@ class Minesweeper:
         win = tk.Toplevel(self.root)
         win.title(title)
         win.resizable(False, False)
-        win.grab_set()  # делает окно модальным
+        win.grab_set()  # модальное окно
 
         tk.Label(win, text=emoji, font=("Arial", 60)).pack(pady=10)
         tk.Label(win, text=message, font=("Arial", 14)).pack(pady=5)
@@ -419,11 +432,19 @@ class Minesweeper:
             tk.Label(win, text=f"Время: {self.get_time()} сек", font=("Arial", 12, "bold")).pack(pady=5)
 
         btn_frame = tk.Frame(win)
-        btn_frame.pack(pady=10)
-        
-        tk.Button(btn_frame, text="Новая игра", command=lambda: [win.destroy(), self.new_game()]).pack(side=tk.LEFT, padx=10)
-        tk.Button(btn_frame, text="Закрыть", command=win.destroy).pack(side=tk.LEFT, padx=10)
+        btn_frame.pack(pady=15)
 
+        # Кнопка "Новая игра"
+        tk.Button(btn_frame, text="Новая игра", 
+                  font=("Arial", 12),
+                  width=12,
+                  command=lambda: [win.destroy(), self.new_game()]).pack(side=tk.LEFT, padx=8)
+        
+        # Кнопка "Главное меню" вместо "Закрыть"
+        tk.Button(btn_frame, text="Главное меню", 
+                  font=("Arial", 12),
+                  width=12,
+                  command=lambda: [win.destroy(), self.return_to_menu()]).pack(side=tk.LEFT, padx=8)
     def run(self):
         self.root.mainloop()
 
