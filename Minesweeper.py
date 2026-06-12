@@ -60,7 +60,87 @@ class Minesweeper:
                 command=lambda l=level_name: self.start_game(l)
             )
             btn.pack(pady=12)
+        # Кнопка рекордов
+        records_btn = tk.Button(
+            self.menu_frame,
+            text="📊 Рекорды",
+            font=("Arial", 14),
+            width=20,
+            command=self.show_records
+        )
+        records_btn.pack(pady=20)
 
+    def start_game(self, level):
+        self.current_level = level
+        self.menu_frame.destroy()  # скрываем главное меню
+
+        # Создаём игровые виджеты
+        self.create_game_widgets()
+        self.new_game()
+
+    def create_game_widgets(self):
+        # Верхняя панель
+        top_frame = tk.Frame(self.root)
+        top_frame.pack(pady=10)
+
+        self.mines_label = tk.Label(top_frame, text=f"Мины: {self.mines_count:03d}", 
+                                   font=("Arial", 16, "bold"), width=10, relief="sunken", bd=2)
+        self.mines_label.pack(side=tk.LEFT, padx=20)
+
+        self.new_game_btn = tk.Button(top_frame, text="😊", font=("Arial", 24), width=3, height=1, command=self.return_to_menu)
+        self.new_game_btn.pack(side=tk.LEFT)
+
+        self.timer_label = tk.Label(top_frame, text="00:00", 
+                                   font=("Arial", 16, "bold"), width=10, relief="sunken", bd=2)
+        self.timer_label.pack(side=tk.RIGHT, padx=20)
+
+        # Игровое поле
+        self.game_frame = tk.Frame(self.root, bg="gray")
+        self.game_frame.pack(pady=10, padx=10)
+
+    def return_to_menu(self):
+        # Очистка игры
+        if self.game_frame:
+            self.game_frame.destroy()
+        self.create_main_menu()
+
+    def new_game(self):
+        self.rows, self.cols, self.mines_count = self.levels[self.current_level]
+        self.mines_left = self.mines_count
+        self.first_click = True
+        self.game_over = False
+        self.start_time = None
+        self.timer_running = False
+        self.update_mines_label()
+
+        for widget in self.game_frame.winfo_children():
+            widget.destroy()
+
+        self.buttons = []
+        self.board = [[0 for _ in range(self.cols)] for _ in range(self.rows)]
+        self.revealed = [[False for _ in range(self.cols)] for _ in range(self.rows)]
+        self.flags = [[False for _ in range(self.cols)] for _ in range(self.rows)]
+
+        for i in range(self.rows):
+            row_buttons = []
+            for j in range(self.cols):
+                btn = tk.Button(
+                    self.game_frame,
+                    width=2,
+                    height=1,
+                    font=("Arial", 10, "bold"),
+                    bg="#c0c0c0",
+                    relief="raised",
+                    bd=3
+                )
+                btn.grid(row=i, column=j, padx=1, pady=1)
+                btn.bind("<Button-1>", lambda e, x=i, y=j: self.left_click(x, y))
+                btn.bind("<Button-3>", lambda e, x=i, y=j: self.right_click(x, y))
+                row_buttons.append(btn)
+            self.buttons.append(row_buttons)
+
+        self.new_game_btn.config(text="😊")
+        self.timer_label.config(text="00:00")
         self.create_widgets()
         self.new_game()
 
