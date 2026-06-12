@@ -30,6 +30,36 @@ class Minesweeper:
         self.mines_left = self.mines_count
 
         self.buttons = []
+        self.game_frame = None
+        self.menu_frame = None
+
+        self.create_main_menu()
+
+    def create_main_menu(self):
+        if self.menu_frame:
+            self.menu_frame.destroy()
+
+        self.menu_frame = tk.Frame(self.root, padx=50, pady=50)
+        self.menu_frame.pack()
+
+        # Заголовок
+        title = tk.Label(self.menu_frame, text="САПЁР", font=("Arial", 48, "bold"))
+        title.pack(pady=30)
+
+        # Кнопки уровней
+        for level_name in self.levels.keys():
+            size = f"({self.levels[level_name][0]}x{self.levels[level_name][1]})"
+            btn = tk.Button(
+                self.menu_frame,
+                text=f"{level_name} {size}",
+                font=("Arial", 16),
+                width=30,
+                height=2,
+                relief="raised",
+                bd=4,
+                command=lambda l=level_name: self.start_game(l)
+            )
+            btn.pack(pady=12)
 
         self.create_widgets()
         self.new_game()
